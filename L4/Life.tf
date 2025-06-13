@@ -27,7 +27,7 @@ resource "aws_instance" "MyInstance" {
   })
 
   lifecycle {
-    create_before_destroy = true
+    prevent_destroy = false
   }
 }
 
