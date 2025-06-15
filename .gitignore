@@ -12,3 +12,6 @@ crash.log
 # Lock file (optional: include if you're ok regenerating it)
 .terraform.lock.hcl
 
+./L1
+
+./L2

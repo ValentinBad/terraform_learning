@@ -1,6 +1,5 @@
 provider "aws" {
-  region = "eu-west-2"
-
+  region = var.region
 }
 
 data "aws_availability_zones" "az" {
@@ -16,7 +15,13 @@ data "aws_ami" "latest_ubuntu" {
   }
 }
 
-
+#------------------------------------------------------------
+locals {
+    default_tags = {
+        Environment = "dev"
+        SG_Ports = "List of ports for security group ingress rules ${join(",", var.sg_ingress_ports)}"
+    }
+}
 #------------------------------------------------------------
 
 resource "aws_default_subnet" "default_az1" {
@@ -36,7 +41,7 @@ resource "aws_security_group" "sg" {
   vpc_id = aws_default_vpc.default_vpc.id
 
   dynamic "ingress" {
-    for_each = [80, 443]
+    for_each = var.sg_ingress_ports
 
     content {
       from_port   = ingress.value
@@ -54,6 +59,8 @@ resource "aws_security_group" "sg" {
   }
   tags = {
     Name = "my-elb-sg"
+    Environment = local.default_tags.Environment
+    SG_Ports = local.default_tags.SG_Ports
   }
 }
 
@@ -62,10 +69,10 @@ resource "aws_launch_template" "my_template" {
 
   name_prefix            = "my-template-"
   image_id               = data.aws_ami.latest_ubuntu.id
-  instance_type          = "t2.micro"
+  instance_type          = var.instance_type
   vpc_security_group_ids = [aws_security_group.sg.id]
   user_data              = filebase64("${path.module}/script.sh")
-
+  tags                   = merge( var.default_tags , {Name = "WebServer in ASG"} )
 }
 
 resource "aws_autoscaling_group" "web" {
